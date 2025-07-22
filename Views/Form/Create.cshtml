@@ -1,0 +1,162 @@
+﻿@model DynamicFormBuilderAppQIA.Models.FormModel
+
+@{
+    ViewData["Title"] = "Create Dynamic Form";
+}
+
+
+
+<div class="container mt-4">
+    <h2 class="mb-4">Create Dynamic Form</h2>
+
+    <form asp-action="Create" id="form-builder">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <!-- Form Title -->
+        <div class="form-group mb-4">
+            <label asp-for="Title" class="control-label font-weight-bold">Form Title</label>
+            <input asp-for="Title" class="form-control" placeholder="e.g., Title" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div> 
+
+        <!-- Fields Container -->
+        <div id="fields-container">
+          @*   @for (int i = 0; i < Model.Fields.Count; i++)
+            {
+                <div class="field-group mb-4 p-3 border rounded">
+                    <!-- Field Label -->
+                    <div class="form-group">
+                        <label class="control-label">Field Label</label>
+                        <input asp-for="Fields[i].Label" class="form-control"
+                               placeholder="e.g., Select Country" />
+                        <span asp-validation-for="Fields[i].Label" class="text-danger"></span>
+                    </div>
+
+                    <!-- Fixed Options Dropdown -->
+                    <div class="form-group">
+                        <label class="control-label">Dropdown Options</label>
+                        <select asp-for="Fields[i].SelectedOption" class="form-control">
+                            <option value="">Select Item</option>
+                            <option value="Option1">Option 1</option>
+                            <option value="Option2">Option 2</option>
+                            <option value="Option3">Option 3</option>
+                        </select> 
+                        <input type="hidden" asp-for="Fields[i].Options" value="Option1,Option2,Option3" />
+                    </div>
+
+                    <!-- Required Field - FIXED -->
+                    <div class="form-check mb-2">
+                        <input asp-for="Fields[i].IsRequired" type="checkbox" class="form-check-input" value="true" />
+                        <input type="hidden" asp-for="Fields[i].IsRequired" value="false" />
+                        <label class="form-check-label">Required Field (will show red <sapn style="color:red">*</sapn>)</label>
+                    </div>
+
+                    <!-- Remove Button -->
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-field">
+                        <i class="fas fa-trash"></i> Remove Field
+                    </button>
+                </div>
+            } *@
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="form-group d-flex justify-content-between mt-4">
+            <button type="button" id="add-field" class="btn btn-outline-primary">
+                <i class="fas fa-plus"></i> Add More
+            </button>
+
+            <div>
+                <button type="reset" class="btn btn-outline-secondary mr-2">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Form
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            let fieldIndex = @Model.Fields.Count;
+
+            // Add new dropdown field
+            $("#add-field").click(function() {
+
+                    // Validate the Title field
+                if (!$("#Title").valid()) {
+                    // Show error in validation summary
+                    $("#title-validation-placeholder").removeClass("d-none");
+                    // Add animation to draw attention to the title field
+                    $("#Title").addClass('is-invalid');
+                    $(".form-title-section").css('animation', 'shake 0.5s');
+                    setTimeout(() => {
+                        $(".form-title-section").css('animation', '');
+                    }, 500);
+                    return;
+                }
+
+                // Hide validation summary error if it was shown
+                $("#title-validation-placeholder").addClass("d-none");
+
+                const newFieldHtml = `
+                <div class="field-group mb-4 p-3 border rounded">
+                    <div class="form-group">
+                        <label class="control-label">Label ${fieldIndex+1}</label>
+                        <input name="Fields[${fieldIndex}].Label" class="form-control"
+                               placeholder="e.g., Select Country" />
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label">Dropdown Options</label>
+                        <select name="Fields[${fieldIndex}].SelectedOption" class="form-control">
+                            <option value="">Select Item</option>
+                            <option value="Option1">Option 1</option>
+                            <option value="Option2">Option 2</option>
+                            <option value="Option3">Option 3</option>
+                        </select>
+                       
+                        <input type="hidden" name="Fields[${fieldIndex}].Options" value="Option1,Option2,Option3" />
+                    </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" name="Fields[${fieldIndex}].IsRequired" class="form-check-input" value="true" />
+                        <input type="hidden" name="Fields[${fieldIndex}].IsRequired" value="false" />
+                        <label class="form-check-label" name="Fields[${fieldIndex}].IsRequired">Required Field (will show red <sapn style="color:red">*</sapn>)</label>
+                    </div>
+                    
+                </div>`;
+
+                $("#fields-container").append(newFieldHtml);
+                fieldIndex++;
+
+                
+            });
+
+            // <button type="button" class="btn btn-sm btn-outline-danger remove-field">
+            //             <i class="fas fa-trash"></i> Remove Field
+            //         </button>
+
+            // Remove field
+            // $(document).on("click", ".remove-field", function() {
+            //     $(this).closest(".field-group").remove();
+            // }); 
+        });
+    </script>
+
+    <style>
+        .field-group {
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+            .field-group:hover {
+                background-color: #e9ecef;
+            }
+
+        .border {
+            border: 1px solid #dee2e6 !important;
+            border-radius: 5px;
+        }
+    </style>
+}
