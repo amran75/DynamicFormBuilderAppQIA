@@ -41,42 +41,26 @@
             text-align: center;
         }
 
-            .app-footer a {
-                color: #4cc9f0;
-                text-decoration: none;
-                transition: all 0.3s ease;
-            }
+        .app-footer a {
+            color: #4cc9f0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
 
-                .app-footer a:hover {
-                    color: #fff;
-                    text-decoration: underline;
-                }
+        .app-footer a:hover {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        select.form-control {
+            appearance: auto;
+        }
     </style>
+
+    @RenderSection("Styles", required: false)
 </head>
 <body>
-    <div class="content-wrapper">
-    @* <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">DynamicFormBuilderAppQIA</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header> *@
-
+    <div class="content-wrapper"> 
     <header class="mb-4 text-center">
         <h1 class="display-4 text-primary">
              Dynamic Form Builder For QIA 
@@ -91,12 +75,29 @@
 
     </div>
 
-    <!-- Footer Section --> 
-    <footer class="app-footer">
+    <!-- Footer Section -->
+    <footer class="app-footer py-3 bg-light border-top mt-5">
         <div class="container text-center">
-            &copy; 2025 - DynamicFormBuilderAppQIA
+            <div class="mb-2">
+                Md Amran Hossain | amranuiucse@gmail.com | 01676841400
+            </div>
+            <div class="text-white">
+                <a href="https://github.com/amran75" class=" me-3" target="_blank">
+                    <i class="fab fa-github fa-lg text-white"></i>
+                </a>
+                <a href="https://www.linkedin.com/in/amranhossain75/" class="me-3" target="_blank">
+                    <i class="fab fa-linkedin fa-lg text-white"></i>
+                </a>
+                <a href="https://medium.com/@@amran27" class="" target="_blank">
+                    <i class="fab fa-medium fa-lg text-white"></i>
+                </a>
+                <a href="https://sites.google.com/view/amranhossain/home" class="text-white me-3" target="_blank">
+                    <i class="fas fa-globe fa-lg"></i>
+                </a>
+            </div>
         </div>
     </footer>
+
 
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
