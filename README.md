@@ -10,9 +10,8 @@
 **Views**: Contains the views for the MVC application.
 
 **Data**: Contains the DbContext and database connection logic.
-
-**Models**: Contains the data models for forms and form fields.
-
+ 
+<img width="1611" height="802" alt="image" src="https://github.com/user-attachments/assets/1117022b-a7f2-4b1c-95b5-d3c1509310c3" />
 
 
 ## Features:
@@ -919,17 +918,26 @@ $(document).ready(function () {
 
 ### Snapshot
 
- 
+ <img width="1573" height="1030" alt="image" src="https://github.com/user-attachments/assets/5a0d4273-173f-42b7-a5b3-48a0916a1e2e" />
+
 
 **Step 1: Provide a From Title** 
- 
+ <img width="1576" height="557" alt="image" src="https://github.com/user-attachments/assets/b4200eb4-f913-41b2-afa1-a87d9be3879d" />
+<img width="1347" height="956" alt="image" src="https://github.com/user-attachments/assets/92f22c16-8755-45c2-ae20-e630f027ddd1" />
+
 **Step 2: Click Add more Dropdown Item and Save.**
- 
+<img width="1347" height="956" alt="image" src="https://github.com/user-attachments/assets/92f22c16-8755-45c2-ae20-e630f027ddd1" />
+
+ <img width="1596" height="835" alt="image" src="https://github.com/user-attachments/assets/ef51fed3-aaef-4fc8-a2b8-448286502c90" />
+
 **Step 3: Saved Form Appeared in the list with Preview Button.**
- 
+ <img width="1673" height="1044" alt="image" src="https://github.com/user-attachments/assets/083b3a75-5851-40cb-8128-c5a1ce3932bb" />
+
 **Step 4: Preview Page:**
- 
+ <img width="1665" height="1034" alt="image" src="https://github.com/user-attachments/assets/db928f24-7950-4f94-b953-f8143c61fd7e" />
+
 **More forms in the List**
  
+<img width="1593" height="554" alt="image" src="https://github.com/user-attachments/assets/195e6ee4-be2a-40c1-b7ca-2c91ea10ec5c" />
 
  
