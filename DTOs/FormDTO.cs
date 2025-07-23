@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DynamicFormBuilderAppQIA.Models
+namespace DynamicFormBuilderAppQIA.DTOs
 {
-    public class FormModel
+    public class FormDTO
     {
         public int Id { get; set; }
 
@@ -10,9 +10,9 @@ namespace DynamicFormBuilderAppQIA.Models
         [StringLength(255)]
         [Display(Name = "Form Title")]
         public string Title { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } 
 
-        public List<FormFieldModel> Fields { get; set; } = new List<FormFieldModel>();
+        public List<FormFieldDTO> Fields { get; set; } = new List<FormFieldDTO>();
 
     }
 }

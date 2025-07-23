@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace DynamicFormBuilderAppQIA.Models
+namespace DynamicFormBuilderAppQIA.DTOs
 {
-    public class FormFieldModel
+    public class FormFieldDTO
     {
         public int Id { get; set; }
         public int FormId { get; set; }

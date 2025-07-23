@@ -1,45 +1,72 @@
-﻿@model DynamicFormBuilderAppQIA.Models.FormModel
-
-@{
-    ViewData["Title"] = "Preview: " + Model.Title;
+﻿@{
+    ViewData["Title"] = "Form Preview";
 }
 
 <div class="container py-5">
-    <div class="card shadow-lg border-0">
+    <div class="card shadow-lg border-0" id="formCard" style="display: none;">
         <div class="card-header bg-success text-white">
-            <h4 class="mb-0">@Model.Title</h4>
+            <h4 class="mb-0" id="formTitle"></h4>
         </div>
 
         <div class="card-body">
-            <form>
-                @foreach (var field in Model.Fields)
-                {
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">
-                            @field.Label
-                            @if (field.IsRequired)
-                            {
-                                <span class="text-danger">*</span>
-                            }
-                        </label>
-
-                        <select class="form-select">
-                            @foreach (var option in field.Options.Split(','))
-                            {
-                                <option value="@option" selected="@(option == field.SelectedOption)">
-                                    @option
-                                </option>
-                            }
-                        </select>
-                    </div>
-                }
-            </form>
+            <form id="dynamicForm"></form>
         </div>
 
-        <div class="card-footer text-end bg-light">
-            <a asp-action="Index" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back to List
-            </a>
+        <div class="card-footer text-end bg-light"> 
+            <button class="btn btn-outline-secondary view-btn">
+                <i class="fas fa-list me-1"></i> View All Forms
+            </button>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Get formId from query string or URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const formId = urlParams.get('id'); // ?id=123
+
+            if (!formId) {
+                alert("No form ID provided.");
+                return;
+            }
+
+            $.get(`/api/FormApi/${formId}`, function (data) {
+                if (!data) {
+                    alert("Form not found");
+                    return;
+                } 
+
+                const $form = $('#dynamicForm');
+                $form.empty();
+
+                data.fields.forEach(field => {
+                    const isRequired = field.isRequired ? '<span class="text-danger">*</span>' : '';
+                    const $wrapper = $('<div class="mb-4"></div>');
+                    const $label = $(`<label class="form-label fw-semibold">${field.label} ${isRequired}</label>`);
+                    const $select = $('<select class="form-select"></select>');
+
+                    field.options.split(',').forEach(option => {
+                        const selected = option === field.selectedOption ? 'selected' : '';
+                        $select.append(`<option value="${option}" ${selected}>${option}</option>`);
+                    });
+
+                    $wrapper.append($label).append($select);
+                    $form.append($wrapper);
+                });
+
+                 $('#formTitle').text(data.title);
+
+                $('#formCard').show();
+            });
+
+             $(document).on('click', '.view-btn', function () {
+                window.location.href = `/Form`;
+            });
+            
+        });
+
+       
+    </script>
+}

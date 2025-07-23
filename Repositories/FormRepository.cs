@@ -1,5 +1,5 @@
 ﻿using DynamicFormBuilderAppQIA.Data;
-using DynamicFormBuilderAppQIA.Models;
+using DynamicFormBuilderAppQIA.DTOs;
 using Microsoft.Data.SqlClient; 
 using System.Data; 
 
@@ -14,23 +14,22 @@ namespace DynamicFormBuilderAppQIA.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<int> CreateFormAsync(FormModel form)
+        public async Task<int> CreateFormAsync(FormDTO form)
         {
             string sql = @"
-                INSERT INTO Forms (Title, CreatedAt) 
+                INSERT INTO Forms (Title) 
                 OUTPUT INSERTED.Id
-                VALUES (@Title, @CreatedAt)";
+                VALUES (@Title)";
 
             var parameters = new SqlParameter[]
             {
-                new SqlParameter("@Title", form.Title),
-                new SqlParameter("@CreatedAt", DateTime.Now)
+                new SqlParameter("@Title", form.Title) 
             };
 
             return await _dbContext.ExecuteScalarAsync<int>(sql, parameters);
         }
 
-        public async Task CreateFormFieldAsync(FormFieldModel field, int formId)
+        public async Task CreateFormFieldAsync(FormFieldDTO field, int formId)
         {
             string sql = @"
                 INSERT INTO FormFields (FormId, Label, Options, SelectedOption, IsRequired)
@@ -48,7 +47,7 @@ namespace DynamicFormBuilderAppQIA.Repositories
             await _dbContext.ExecuteCommandAsync(sql, parameters);
         }
 
-        public async Task<FormModel> GetFormByIdAsync(int id)
+        public async Task<FormDTO> GetFormByIdAsync(int id)
         {
             string formSql = "SELECT * FROM Forms WHERE Id = @Id";
             var formParams = new SqlParameter[] { new SqlParameter("@Id", id) };
@@ -57,7 +56,7 @@ namespace DynamicFormBuilderAppQIA.Repositories
             if (formTable.Rows.Count == 0) return null;
 
             DataRow formRow = formTable.Rows[0];
-            var form = new FormModel
+            var form = new FormDTO
             {
                 Id = Convert.ToInt32(formRow["Id"]),
                 Title = formRow["Title"].ToString(),
@@ -69,10 +68,10 @@ namespace DynamicFormBuilderAppQIA.Repositories
             var fieldsParams = new SqlParameter[] { new SqlParameter("@FormId", id) };
             DataTable fieldsTable = await _dbContext.QueryAsync(fieldsSql, fieldsParams);
 
-            form.Fields = new List<FormFieldModel>();
+            form.Fields = new List<FormFieldDTO>();
             foreach (DataRow fieldRow in fieldsTable.Rows)
             {
-                form.Fields.Add(new FormFieldModel
+                form.Fields.Add(new FormFieldDTO
                 {
                     Id = Convert.ToInt32(fieldRow["Id"]),
                     Label = fieldRow["Label"].ToString(),
@@ -85,15 +84,15 @@ namespace DynamicFormBuilderAppQIA.Repositories
             return form;
         }
 
-        public async Task<IEnumerable<FormModel>> GetAllFormsAsync()
+        public async Task<IEnumerable<FormDTO>> GetAllFormsAsync()
         {
             string sql = "SELECT * FROM Forms ORDER BY CreatedAt DESC";
             DataTable formsTable = await _dbContext.QueryAsync(sql);
 
-            var forms = new List<FormModel>();
+            var forms = new List<FormDTO>();
             foreach (DataRow row in formsTable.Rows)
             {
-                forms.Add(new FormModel
+                forms.Add(new FormDTO
                 {
                     Id = Convert.ToInt32(row["Id"]),
                     Title = row["Title"].ToString(),

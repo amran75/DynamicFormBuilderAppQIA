@@ -1,12 +1,12 @@
-﻿using DynamicFormBuilderAppQIA.Models;
+﻿using DynamicFormBuilderAppQIA.DTOs;
 
 namespace DynamicFormBuilderAppQIA.Repositories
 {
     public interface IFormRepository
     {
-        Task<int> CreateFormAsync(FormModel form);
-        Task<FormModel> GetFormByIdAsync(int id);
-        Task<IEnumerable<FormModel>> GetAllFormsAsync();
-        Task CreateFormFieldAsync(FormFieldModel field, int formId);
+        Task<int> CreateFormAsync(FormDTO form);
+        Task<FormDTO> GetFormByIdAsync(int id);
+        Task<IEnumerable<FormDTO>> GetAllFormsAsync();
+        Task CreateFormFieldAsync(FormFieldDTO field, int formId);
     }
 }

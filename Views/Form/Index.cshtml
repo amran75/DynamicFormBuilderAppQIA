@@ -1,50 +1,60 @@
-﻿@model IEnumerable<DynamicFormBuilderAppQIA.Models.FormModel>
-
-@{
-    ViewData["Title"] = "Form History";
+﻿@{
+    ViewData["Title"] = "Forms";
 }
 
-<div class="container mt-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Dynamic Forms History</h2>
-        <a asp-action="Create" class="btn btn-success">
-            <i class="fas fa-plus me-1"></i> Create New Form
-        </a>
-    </div>
-
-    @if (!Model.Any())
-    {
-        <div class="alert alert-info shadow-sm">
-            <strong>No forms available.</strong> You can
-            <a asp-action="Create" class="alert-link">create your first form here</a>.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive shadow-sm rounded">
-            <table class="table table-hover table-bordered align-middle">
-                <thead class="table-info">
-                    <tr>
-                        <th scope="col">Form Title</th>
-                        <th scope="col" class="text-center" style="width: 150px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var form in Model)
-                    {
-                        <tr>
-                            <td>@form.Title</td>
-                            <td class="text-center">
-                                <a asp-action="Preview" asp-route-id="@form.Id" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye me-1"></i> Preview
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Dynamic Forms History Using API</h2>
+    <button class="btn btn-success create-btn">
+        <i class="fas fa-plus me-1"></i> Create New Form
+    </button>
 </div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th class="text-center">Actions</th>
+        </tr>
+    </thead>
+    <tbody id="form-table-body">
+        <!-- Loaded by JavaScript -->
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Fetch all forms using the API
+            $.get("/api/FormApi/titles", function (data) {
+                if (!data || data.length === 0) {
+                    $('#form-table-body').html('<tr><td colspan="2"><div class="alert alert-info">No forms available. <a href="/Form/Create">Create one</a>.</div></td></tr>');
+                } else {
+                    let rows = '';
+                    data.forEach(form => {
+                        rows += `
+                            <tr>
+                                <td>${form.title}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-info preview-btn" data-id="${form.id}">
+                                        <i class="fas fa-eye me-1"></i> Preview
+                                    </button>
+                                </td>
+                            </tr>`;
+                    });
+                    $('#form-table-body').html(rows);
+                }
+            });
+
+             
+            $(document).on('click', '.preview-btn', function () {
+                const id = $(this).data("id");
+                window.location.href = `/Form/Preview?id=${id}`;
+            });
+
+            $(document).on('click', '.create-btn', function () {
+                window.location.href = `/Form/Create`;
+            });
+        });
+    </script>
+}

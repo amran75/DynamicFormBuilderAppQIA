@@ -14,14 +14,23 @@ builder.Services.AddScoped<DbContext>(provider =>
 // Register Unit of Work and Repository
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IFormRepository, FormRepository>();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 
 var app = builder.Build();
-
+app.UseCors();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseExceptionHandler("/Home/Error"); 
     app.UseHsts();
 }
 
@@ -30,7 +39,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+ 
+
 app.UseAuthorization();
+app.MapControllers();  
 
 app.MapControllerRoute(
     name: "default",

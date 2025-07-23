@@ -1,14 +1,152 @@
-# DynamicFormBuilderAppQIA
+# Dynamic Form Builder Application with API Integration
  
 ## Project Architecture:
-<img width="1916" height="1040" alt="image" src="https://github.com/user-attachments/assets/a7cb457d-590f-44b6-a3ef-255d3d6f1531" />
+**Controllers**: Contains the API and MVC controllers for handling requests.
+
+**DTOs**: Contains Data Transfer Objects for form submission and response.
+
+**Repositories**: Contains the repository interfaces and implementations for data access.
+
+**Views**: Contains the views for the MVC application.
+
+**Data**: Contains the DbContext and database connection logic.
+
+**Models**: Contains the data models for forms and form fields.
+
+
+
+## Features:
+- Create dynamic forms with multiple fields. 
+- Preview forms after submission.
+
+### Form API Controller 
+
+```
+using Microsoft.AspNetCore.Mvc;
+using DynamicFormBuilderAppQIA.DTOs;
+using DynamicFormBuilderAppQIA.Repositories;
+using Microsoft.SqlServer.Server;
+using Microsoft.AspNetCore.Http.HttpResults;
+
+namespace DynamicFormBuilderAppQIA.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class FormApiController : ControllerBase
+    {
+        private readonly IFormRepository _formRepository;
+
+        public FormApiController(IFormRepository formRepository)
+        {
+            _formRepository = formRepository;
+        }
+
+        [HttpGet("titles")]
+        public async Task<IActionResult> GetFormTitles()
+        {
+            var forms = await _formRepository.GetAllFormsAsync();
+            var formTitles = forms.Select(f => new FormTitleDTO
+            {
+                Id = f.Id,
+                Title = f.Title
+            }).ToList();
+
+            return Ok(formTitles);
+        }
+
+
+        [HttpGet]
+        public IActionResult GetAll()
+        {
+            var forms = _formRepository.GetAllFormsAsync();
+            return Ok(forms);
+        }
+
+        [HttpPost("Create")]
+        public async Task<IActionResult> Create([FromBody] FormSubmitDTO formDto)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(formDto.Title) || formDto.Fields == null || !formDto.Fields.Any())
+                {
+                    return BadRequest(new
+                    {
+                        error = "Form title and at least one field are required."
+                    });
+                }
+
+                FormDTO Obj = new FormDTO
+                {
+                    Title = formDto.Title,
+                    CreatedAt = DateTime.UtcNow,
+                    Fields = formDto.Fields.Select(f => new FormFieldDTO
+                    {
+                        Label = f.Label,
+                        Options = f.Options,
+                        SelectedOption = f.SelectedOption,
+                        IsRequired = f.IsRequired
+                    }).ToList()
+                };
+
+                var formId = await _formRepository.CreateFormAsync(Obj);
+                // Insert each field
+                foreach (var field in Obj.Fields)
+                {
+                    await _formRepository.CreateFormFieldAsync(field, formId);
+                }
+
+                return Ok(new
+                {
+                    message = "Form created successfully.",
+                    formId = formId
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "An error occurred while creating the form.", 
+                });
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Get(int id)
+        {
+            var form = await _formRepository.GetFormByIdAsync(id);
+            if (form == null)
+            {
+                return NotFound();
+            }
+
+            //  Map FormDTO to FormResponseDTO
+            var response = new FormResponseDTO
+            {
+                Id = form.Id,
+                Title = form.Title,
+                Fields = form.Fields.Select(f => new FormFieldResponseDTO
+                {
+                    Label = f.Label,
+                    IsRequired = f.IsRequired,
+                    Options = f.Options,
+                    SelectedOption = f.SelectedOption
+                }).ToList()
+            };
+
+                return Ok(response);
+        }
+
+    }
+}
+
+```
 
 ### Form Controller 
 
 ```
-using DynamicFormBuilderAppQIA.Models;
+using Microsoft.AspNetCore.Mvc;
 using DynamicFormBuilderAppQIA.Repositories;
-using Microsoft.AspNetCore.Mvc; 
+
 namespace DynamicFormBuilderAppQIA.Controllers
 {
     public class FormController : Controller
@@ -19,125 +157,75 @@ namespace DynamicFormBuilderAppQIA.Controllers
         {
             _formRepository = formRepository;
         }
-         
+
+        public IActionResult Index()
+        {
+            return View(); 
+        }
+
         public IActionResult Create()
         {
-            return View(new FormModel());
+            return View(); 
         }
 
-        
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(FormModel form)
+        public IActionResult Preview()
         {
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    // Insert the form
-                    int formId = await _formRepository.CreateFormAsync(form);
-
-                    // Insert each field
-                    foreach (var field in form.Fields)
-                    {
-                        await _formRepository.CreateFormFieldAsync(field, formId);
-                    }
-
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
-                {
-                    // Log error
-                    ModelState.AddModelError("", $"Error saving form: {ex.Message}");
-                }
-            }
-
-            return View(form);
-        }
-
-         
-        public async Task<IActionResult> Index()
-        {
-            try
-            {
-                var forms = await _formRepository.GetAllFormsAsync();
-                return View(forms);
-            }
-            catch (Exception ex)
-            {
-                ViewBag.Error = $"Error loading forms: {ex.Message}";
-                return View(new List<FormModel>());
-            }
-        }
-
-        
-        public async Task<IActionResult> Preview(int id)
-        {
-            try
-            {
-                var form = await _formRepository.GetFormByIdAsync(id);
-                if (form == null)
-                {
-                    return NotFound();
-                }
-
-                return View(form);
-            }
-            catch (Exception ex)
-            {
-                ViewBag.Error = $"Error loading preview: {ex.Message}";
-                return View(new FormModel());
-            }
+            return View(); 
         }
     }
 }
-```
-### Models
 
 ```
-using System.ComponentModel.DataAnnotations;
 
-namespace DynamicFormBuilderAppQIA.Models
+
+### DTOS
+
+```
+namespace DynamicFormBuilderAppQIA.DTOs
 {
-    public class FormModel
+    public class FormFieldResponseDTO
     {
-        public int Id { get; set; }
-
-        [Required(ErrorMessage = "Form title is required")]
-        [StringLength(255)]
-        [Display(Name = "Form Title")]
-        public string Title { get; set; }
-        public DateTime CreatedAt { get; set; }
-
-        public List<FormFieldModel> Fields { get; set; } = new List<FormFieldModel>();
-
-    }
-}
-
-
-using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
-
-namespace DynamicFormBuilderAppQIA.Models
-{
-    public class FormFieldModel
-    {
-        public int Id { get; set; }
-        public int FormId { get; set; }
-
-        [Required(ErrorMessage = "Field label is required")]
-        [StringLength(100)]
         public string Label { get; set; }
-        [Required]
-        public string Options { get; set; }  // comma separated "Option1,Option2,Option3"
-        public string SelectedOption { get; set; } 
+        public bool IsRequired { get; set; }
+        public string Options { get; set; }
+        public string SelectedOption { get; set; }
+    }
 
-        [DisplayName("Required Field")]
+    public class FormResponseDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public List<FormFieldResponseDTO> Fields { get; set; }
+    }
+
+    public class FormSubmitDTO
+    {
+        public string Title { get; set; }
+        public List<FormSubmitFieldDTO> Fields { get; set; }
+    }
+
+    public class FormSubmitFieldDTO
+    {
+        public string Label { get; set; }
+        public  string  Options { get; set; } 
+        public string SelectedOption { get; set; }
         public bool IsRequired { get; set; }
     }
 }
 
+
+namespace DynamicFormBuilderAppQIA.DTOs
+{
+    public class FormTitleDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+    }
+}
+
+
 ```
+
 ### Repositories 
 
 **FormRepository.cs**
@@ -381,14 +469,23 @@ builder.Services.AddScoped<DbContext>(provider =>
 // Register Unit of Work and Repository
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IFormRepository, FormRepository>();
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 
 var app = builder.Build();
-
+app.UseCors();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseExceptionHandler("/Home/Error"); 
     app.UseHsts();
 }
 
@@ -397,7 +494,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+ 
+
 app.UseAuthorization();
+app.MapControllers();  
 
 app.MapControllerRoute(
     name: "default",
@@ -405,113 +505,229 @@ app.MapControllerRoute(
 
 app.Run();
 
+
 ```
+
+
+### Data Layer
+
+**DbContext.cs**
+```
+using Microsoft.Data.SqlClient;
+using System;
+using System.Data;
+using System.Threading.Tasks;
+
+namespace DynamicFormBuilderAppQIA.Data
+{
+    public class DbContext : IDisposable
+    {
+        private readonly string _connectionString;
+        private SqlConnection _connection;
+        private bool _disposed = false;
+
+        public SqlConnection Connection
+        {
+            get
+            {
+                if (_connection == null)
+                {
+                    _connection = new SqlConnection(_connectionString);
+                }
+                return _connection;
+            }
+        }
+
+        public DbContext(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        public async Task OpenConnectionAsync()
+        {
+            if (Connection.State != ConnectionState.Open)
+            {
+                await Connection.OpenAsync();
+            }
+        }
+
+        public async Task<DataTable> QueryAsync(string sql, params SqlParameter[] parameters)
+        {
+            await OpenConnectionAsync();
+
+            using var command = new SqlCommand(sql, Connection);
+            if (parameters != null)
+            {
+                command.Parameters.AddRange(parameters);
+            }
+
+            using var adapter = new SqlDataAdapter(command);
+            var dataTable = new DataTable();
+            adapter.Fill(dataTable);
+
+            return dataTable;
+        }
+
+        public async Task<int> ExecuteCommandAsync(string sql, params SqlParameter[] parameters)
+        {
+            await OpenConnectionAsync();
+
+            using var command = new SqlCommand(sql, Connection);
+            if (parameters != null)
+            {
+                command.Parameters.AddRange(parameters);
+            }
+
+            return await command.ExecuteNonQueryAsync();
+        }
+
+        public async Task<T> ExecuteScalarAsync<T>(string sql, params SqlParameter[] parameters)
+        {
+            await OpenConnectionAsync();
+
+            using var command = new SqlCommand(sql, Connection);
+            if (parameters != null)
+            {
+                command.Parameters.AddRange(parameters);
+            }
+
+            var result = await command.ExecuteScalarAsync();
+            return (T)Convert.ChangeType(result, typeof(T));
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _connection?.Close();
+                    _connection?.Dispose();
+                }
+                _disposed = true;
+            }
+        }
+    }
+}
+```
+
+
+### Views
+
 **Index View**
 ```
-@model IEnumerable<DynamicFormBuilderAppQIA.Models.FormModel>
-
 @{
-    ViewData["Title"] = "Form History";
+    ViewData["Title"] = "Forms";
 }
 
-<div class="container mt-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Dynamic Forms History</h2>
-        <a asp-action="Create" class="btn btn-success">
-            <i class="fas fa-plus me-1"></i> Create New Form
-        </a>
-    </div>
-
-    @if (!Model.Any())
-    {
-        <div class="alert alert-info shadow-sm">
-            <strong>No forms available.</strong> You can
-            <a asp-action="Create" class="alert-link">create your first form here</a>.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive shadow-sm rounded">
-            <table class="table table-hover table-bordered align-middle">
-                <thead class="table-info">
-                    <tr>
-                        <th scope="col">Form Title</th>
-                        <th scope="col" class="text-center" style="width: 150px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var form in Model)
-                    {
-                        <tr>
-                            <td>@form.Title</td>
-                            <td class="text-center">
-                                <a asp-action="Preview" asp-route-id="@form.Id" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye me-1"></i> Preview
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Dynamic Forms History Using API</h2>
+    <button class="btn btn-success create-btn">
+        <i class="fas fa-plus me-1"></i> Create New Form
+    </button>
 </div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th class="text-center">Actions</th>
+        </tr>
+    </thead>
+    <tbody id="form-table-body">
+        <!-- Loaded by JavaScript -->
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Fetch all forms using the API
+            $.get("/api/FormApi/titles", function (data) {
+                if (!data || data.length === 0) {
+                    $('#form-table-body').html('<tr><td colspan="2"><div class="alert alert-info">No forms available. <a href="/Form/Create">Create one</a>.</div></td></tr>');
+                } else {
+                    let rows = '';
+                    data.forEach(form => {
+                        rows += `
+                            <tr>
+                                <td>${form.title}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-info preview-btn" data-id="${form.id}">
+                                        <i class="fas fa-eye me-1"></i> Preview
+                                    </button>
+                                </td>
+                            </tr>`;
+                    });
+                    $('#form-table-body').html(rows);
+                }
+            });
+
+             
+            $(document).on('click', '.preview-btn', function () {
+                const id = $(this).data("id");
+                window.location.href = `/Form/Preview?id=${id}`;
+            });
+
+            $(document).on('click', '.create-btn', function () {
+                window.location.href = `/Form/Create`;
+            });
+        });
+    </script>
+}
+
 
 ```
 **Create View**
 ```
-@model DynamicFormBuilderAppQIA.Models.FormModel
-
 @{
     ViewData["Title"] = "Create Dynamic Form";
 }
 
-@section Styles {
-    <link href="~/css/custom.css" rel="stylesheet" />
-}
-
 <div class="container mt-5">
-
+ 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Create Dynamic Form</h2>
-        <a asp-action="Index" class="btn btn-success">
+        <h2 class="mb-0">Create Dynamic Form Using API</h2>
+        
+
+        <button class="btn btn-success view-btn">
             <i class="fas fa-list me-1"></i> View All Forms
-        </a>
+        </button>
     </div>
 
-    <form asp-action="Create" id="form-builder">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-        <!-- Form Title -->
-        <div class="form-group mb-4">
-            <label asp-for="Title" class="form-label fw-bold">Form Title</label>
-            <input asp-for="Title" class="form-control" placeholder="e.g., Customer Survey" />
-            <span asp-validation-for="Title" class="text-danger"></span>
+    <form id="form-builder">
+        <!-- Title -->
+        <div class="form-group mb-3">
+            <label for="form-title" class="form-label">Form Title</label>
+            <input type="text" id="Title" class="form-control" placeholder="e.g., Customer Feedback" required />
         </div>
 
-        <!-- Dynamic Fields Container -->
+        <!-- Fields container -->
         <div id="fields-container"></div>
 
-        <!-- Action Buttons -->
-        <div class="form-group d-flex justify-content-between mt-4">
+        <!-- Add Field Button -->
+        <div class="form-group mt-3">
             <button type="button" id="add-field" class="btn btn-outline-primary">
-                <i class="fas fa-plus me-1"></i> Add More
+                <i class="fas fa-plus"></i> Add Field
             </button>
-            <div>
-                <button type="reset" class="btn btn-outline-secondary me-2">
-                    <i class="fas fa-times"></i> Clear
-                </button>
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-save"></i> Save Form
-                </button>
-            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="form-group mt-4">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save"></i> Submit Form
+            </button>
         </div>
     </form>
-
 </div>
-
+ 
 @section Scripts {
     <script src="~/js/form/create.js"></script>
 } 
@@ -519,7 +735,7 @@ app.Run();
 **create.js**
 ```
 $(document).ready(function () {
-    let fieldIndex = 0;
+    let fieldIndex = 0;  
 
     $("#add-field").click(function () {
         if (!$("#Title").valid()) {
@@ -577,82 +793,143 @@ $(document).ready(function () {
     $(document).on("click", ".remove-field", function () {
         $(this).closest(".field-group").remove();
     });
+
+    $("#form-builder").submit(function (e) {
+        e.preventDefault();
+
+        const formData = {
+            Title: $("#Title").val(),
+            Fields: []
+        };
+
+        $(".field-group").each(function () {
+            const idx = $(this).index();
+            formData.Fields.push({
+                Label: $(this).find(`input[name="Fields[${idx}].Label"]`).val(),
+                Options: $(this).find(`input[name="Fields[${idx}].Options"]`).val(),
+                SelectedOption: $(this).find(`select[name="Fields[${idx}].SelectedOption"]`).val(),
+                IsRequired: $(this).find(`input[name="Fields[${idx}].IsRequired"]:checked`).length > 0
+            });
+        });
+
+        $.ajax({
+            url: "/api/FormApi/Create",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(formData),
+            success: function () {
+                alert("Form created successfully");
+                window.location.href = "/Form/Index";
+            },
+            error: function () {
+                alert("Error creating form");
+            }
+        });
+    });
+
+
+    $(document).on('click', '.view-btn', function () {
+        window.location.href = `/Form`;
+    });
+
+
 });
+
 
 ```
 **Preview View**
 ```
-@model DynamicFormBuilderAppQIA.Models.FormModel
-
 @{
-    ViewData["Title"] = "Preview: " + Model.Title;
+    ViewData["Title"] = "Form Preview";
 }
 
 <div class="container py-5">
-    <div class="card shadow-lg border-0">
+    <div class="card shadow-lg border-0" id="formCard" style="display: none;">
         <div class="card-header bg-success text-white">
-            <h4 class="mb-0">@Model.Title</h4>
+            <h4 class="mb-0" id="formTitle"></h4>
         </div>
 
         <div class="card-body">
-            <form>
-                @foreach (var field in Model.Fields)
-                {
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">
-                            @field.Label
-                            @if (field.IsRequired)
-                            {
-                                <span class="text-danger">*</span>
-                            }
-                        </label>
-
-                        <select class="form-select">
-                            @foreach (var option in field.Options.Split(','))
-                            {
-                                <option value="@option" selected="@(option == field.SelectedOption)">
-                                    @option
-                                </option>
-                            }
-                        </select>
-                    </div>
-                }
-            </form>
+            <form id="dynamicForm"></form>
         </div>
 
-        <div class="card-footer text-end bg-light">
-            <a asp-action="Index" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Back to List
-            </a>
+        <div class="card-footer text-end bg-light"> 
+            <button class="btn btn-outline-secondary view-btn">
+                <i class="fas fa-list me-1"></i> View All Forms
+            </button>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Get formId from query string or URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const formId = urlParams.get('id'); // ?id=123
+
+            if (!formId) {
+                alert("No form ID provided.");
+                return;
+            }
+
+            $.get(`/api/FormApi/${formId}`, function (data) {
+                if (!data) {
+                    alert("Form not found");
+                    return;
+                } 
+
+                const $form = $('#dynamicForm');
+                $form.empty();
+
+                data.fields.forEach(field => {
+                    const isRequired = field.isRequired ? '<span class="text-danger">*</span>' : '';
+                    const $wrapper = $('<div class="mb-4"></div>');
+                    const $label = $(`<label class="form-label fw-semibold">${field.label} ${isRequired}</label>`);
+                    const $select = $('<select class="form-select"></select>');
+
+                    field.options.split(',').forEach(option => {
+                        const selected = option === field.selectedOption ? 'selected' : '';
+                        $select.append(`<option value="${option}" ${selected}>${option}</option>`);
+                    });
+
+                    $wrapper.append($label).append($select);
+                    $form.append($wrapper);
+                });
+
+                 $('#formTitle').text(data.title);
+
+                $('#formCard').show();
+            });
+
+             $(document).on('click', '.view-btn', function () {
+                window.location.href = `/Form`;
+            });
+            
+        });
+
+       
+    </script>
+}
+
 
 ```
 
 
 
-**Run The Application**
+### Snapshot
 
-<img width="1912" height="1036" alt="image" src="https://github.com/user-attachments/assets/2603f728-249c-42f5-b394-7828278fec26" />
-
-
+ 
 
 **Step 1: Provide a From Title** 
- <img width="1688" height="560" alt="image" src="https://github.com/user-attachments/assets/53faea02-7855-426c-99e5-d1be19327ac4" />
- <img width="1474" height="449" alt="image" src="https://github.com/user-attachments/assets/99284b58-7c35-4a7f-8963-258d43bd4cf1" />
-
-
+ 
 **Step 2: Click Add more Dropdown Item and Save.**
- <img width="1496" height="986" alt="image" src="https://github.com/user-attachments/assets/2a6f694c-2c3d-40aa-80cf-894848030700" />
-
+ 
 **Step 3: Saved Form Appeared in the list with Preview Button.**
-<img width="1660" height="1039" alt="image" src="https://github.com/user-attachments/assets/c3b71d83-921d-473d-9d6c-125a5be1fb4b" />
-
+ 
 **Step 4: Preview Page:**
-<img width="1662" height="1030" alt="image" src="https://github.com/user-attachments/assets/31d5138e-4412-459e-948f-9cd7b1d7ef7e" />
-
+ 
 **More forms in the List**
-<img width="1107" height="611" alt="image" src="https://github.com/user-attachments/assets/fa2a68f0-eb77-46c4-b955-48996208537a" />
-<img width="1119" height="360" alt="image" src="https://github.com/user-attachments/assets/9a812f8b-97e3-4341-8c71-2c80085dbfe2" />
+ 
 
+ 

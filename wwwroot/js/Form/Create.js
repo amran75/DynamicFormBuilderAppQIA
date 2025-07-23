@@ -1,5 +1,5 @@
 $(document).ready(function () {
-    let fieldIndex = 0;
+    let fieldIndex = 0;  
 
     $("#add-field").click(function () {
         if (!$("#Title").valid()) {
@@ -57,4 +57,44 @@ $(document).ready(function () {
     $(document).on("click", ".remove-field", function () {
         $(this).closest(".field-group").remove();
     });
+
+    $("#form-builder").submit(function (e) {
+        e.preventDefault();
+
+        const formData = {
+            Title: $("#Title").val(),
+            Fields: []
+        };
+
+        $(".field-group").each(function () {
+            const idx = $(this).index();
+            formData.Fields.push({
+                Label: $(this).find(`input[name="Fields[${idx}].Label"]`).val(),
+                Options: $(this).find(`input[name="Fields[${idx}].Options"]`).val(),
+                SelectedOption: $(this).find(`select[name="Fields[${idx}].SelectedOption"]`).val(),
+                IsRequired: $(this).find(`input[name="Fields[${idx}].IsRequired"]:checked`).length > 0
+            });
+        });
+
+        $.ajax({
+            url: "/api/FormApi/Create",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(formData),
+            success: function () {
+                alert("Form created successfully");
+                window.location.href = "/Form/Index";
+            },
+            error: function () {
+                alert("Error creating form");
+            }
+        });
+    });
+
+
+    $(document).on('click', '.view-btn', function () {
+        window.location.href = `/Form`;
+    });
+
+
 });
