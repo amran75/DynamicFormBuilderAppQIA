@@ -1,5 +1,17 @@
-# DynamicFormBuilderAppQIA
+# Dynamic Form Builder Application
  
+## Project Architecture:
+
+**Controllers**: Contains the API and MVC controllers for handling requests.
+
+**Repositories**: Contains the repository interfaces and implementations for data access.
+
+**Views**: Contains the Razor views for the MVC application.
+
+**Data**: Contains the DbContext and database connection logic.
+
+**Models**: Contains the data models for forms and form fields.
+
 ## Project Architecture:
 <img width="1916" height="1040" alt="image" src="https://github.com/user-attachments/assets/a7cb457d-590f-44b6-a3ef-255d3d6f1531" />
 
