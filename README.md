@@ -12,6 +12,12 @@
 
 **Models**: Contains the data models for forms and form fields.
 
+
+## Features:
+- Create dynamic forms with multiple fields. 
+- Preview forms after submission.
+
+
 ## Project Architecture:
 <img width="1916" height="1040" alt="image" src="https://github.com/user-attachments/assets/a7cb457d-590f-44b6-a3ef-255d3d6f1531" />
 
